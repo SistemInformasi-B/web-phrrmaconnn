@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lockscreen Notification Prop with Clock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: #000;
+            background-image: linear-gradient(180deg, #1a1a2e 0%, #000000 100%);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 60px 20px;
+            overflow: hidden;
+        }
+
+        /* Jam & Tanggal Lockscreen */
+        .lockscreen-info {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .time {
+            font-size: 4.5rem;
+            font-weight: 200;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .date {
+            font-size: 1.1rem;
+            color: #b3b3b3;
+            font-weight: 400;
+        }
+
+        /* Container Notifikasi */
+        .notification-container {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: auto;
+            margin-top: 50px;
+            perspective: 1000px;
+        }
+
+        /* Kartu Notifikasi AI */
+        .notif-card {
+            background: rgba(35, 35, 35, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            touch-action: pan-x;
+            transition: transform 0.1s ease, opacity 0.2s ease;
+            cursor: grab;
+            z-index: 10;
+        }
+
+        .notif-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .app-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-icon {
+            width: 20px;
+            height: 20px;
+            background: #10a37f;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .app-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e5e5e5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notif-time {
+            font-size: 0.8rem;
+            color: #8e8ea0;
+        }
+
+        .notif-body {
+            font-size: 0.95rem;
+            color: #f5f5f7;
+            line-height: 1.4;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lockscreen-info">
+        <div class="time" id="clock">07:00</div>
+        <div class="date">Kamis, 9 Juli</div>
+    </div>
+
+    <div class="notification-container">
+        <div class="notif-card" id="notifCard">
+            <div class="notif-header">
+                <div class="app-info">
+                    <div class="app-icon">AP</div> 
+                    <div class="app-name">AI PINTAR</div> 
+                </div>
+                <div class="notif-time">Sekarang</div>
+            </div>
+            <div class="notif-body">
+                Halo Awan. Ada yang bisa saya bantu?
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;"></div>
+
+    <script>
+        // Fungsi Jam Otomatis
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours().toString().padStart(2, '0');
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Fitur Klik Layar untuk Layar Penuh (Fullscreen)
+        document.body.addEventListener('click', function(e) {
+            // Biar ga bentrok pas ngegeser notifikasi
+            if (e.target.closest('#notifCard')) return; 
+
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Gagal fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // Logika Swipe
+        const card = document.getElementById('notifCard');
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+
+        card.addEventListener('touchstart', dragStart);
+        card.addEventListener('touchmove', dragMove);
+        card.addEventListener('touchend', dragEnd);
+
+        card.addEventListener('mousedown', dragStart);
+        window.addEventListener('mousemove', dragMove);
+        window.addEventListener('mouseup', dragEnd);
+
+        function dragStart(e) {
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            isDragging = true;
+            card.style.transition = 'none';
+        }
+
+        function dragMove(e) {
+            if (!isDragging) return;
+            const x = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            currentX = x - startX;
+            
+            if (currentX > 0 || currentX < 0) {
+                card.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.03}deg)`;
+                card.style.opacity = `${1 - Math.abs(currentX) / 300}`;
+            }
+        }
+
+        function dragEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+
+            if (Math.abs(currentX) > 120) {
+                const direction = currentX > 0 ? 1 : -1;
+                card.style.transform = `translateX(${direction * 500}px)`;
+                card.style.opacity = '0';
+                
+                setTimeout(() => {
+                    card.style.transform = 'translateX(0) rotate(0)';
+                    card.style.opacity = '1';
+                }, 5000);
+            } else {
+                card.style.transform = 'translateX(0) rotate(0)';
+                card.style.opacity = '1';
+            }
+            currentX = 0;
+        }
+    </script>
+</body>
+</html>
